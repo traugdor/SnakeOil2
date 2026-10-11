@@ -10,6 +10,9 @@ import numpy as np
 from .allocator import allocate
 from .constants import (BLOCK_SIZE, FIXED_VELOCITY, FORCED_RELEASE_S, PITCH_BEND_RANGE, PLAYABLE_VOICES,
                         POOL_SIZE, SAMPLE_RATE)
+from .destinations import RATE, SRC_LFO1, SRC_LFO2
+from .lfo import LFO
+from .modmatrix import ModMatrix, note_source, smooth
 from .params import BANK_KEYS, PARAMS
 from .pitch import midi_note_to_freq
 from .voice import Voice
@@ -32,6 +35,11 @@ class Engine:
         self.aftertouch_value = 0.0
         self.steal_count = 0
         self.forced_releases = 0
+        self.matrix = ModMatrix(PARAMS)
+        self.lfo = (LFO(seed=1), LFO(seed=2))
+        self.lfo_values = [0.0, 0.0]
+        self._wheel_s = 0.0
+        self._at_s = 0.0
 
     # ---- parameters -------------------------------------------------------------------------------
 
@@ -44,7 +52,10 @@ class Engine:
         return self.params[pid]
 
     def _param_changed(self, pid, value):
-        """Hook for parameters that need immediate side effects (extended in later tasks)."""
+        if pid.startswith("mod") and pid[3].isdigit():
+            i = int(pid[3:pid.index("_")])
+            self.matrix.set_row(i, self.params["mod%d_src" % i], self.params["mod%d_scale" % i],
+                                self.params["mod%d_dst" % i])
 
     # ---- notes and controllers ---------------------------------------------------------------------
 
@@ -143,22 +154,50 @@ class Engine:
         p = self.params
         return {k: overrides.get(prefix + k, p[prefix + k]) for k in BANK_KEYS}
 
+    def _eval_block(self, n):
+        """Advance the LFOs and evaluate the matrix once for this block."""
+        p = self.params
+        self._wheel_s = smooth(self._wheel_s, self.mod_wheel)
+        self._at_s = smooth(self._at_s, self.aftertouch_value)
+        sources = [0.0, 0.0, self.lfo_values[0], self.lfo_values[1], self._wheel_s, self._at_s]
+        last = note_source(self._last_note)
+        rates = self.matrix.evaluate(p, sources, last, kinds=(RATE,)).values
+        for i in (0, 1):
+            rate = rates.get("lfo%d_rate" % (i + 1), p["lfo%d_rate" % (i + 1)])
+            self.lfo_values[i] = self.lfo[i].next_block(n, self.sr, rate, p["lfo%d_wave" % (i + 1)])[0]
+        sources[SRC_LFO1], sources[SRC_LFO2] = self.lfo_values
+        common = self.matrix.evaluate(p, sources, last)
+        return common, sources
+
     def process(self, n=None, now=None):
         n = self.block_size if n is None else int(n)
         p = self.params
-        mix = p["mix"]
+        common, sources = self._eval_block(n)
+
+        def g(pid):
+            return common.values.get(pid, p[pid])
+
+        mix = g("mix")
         gain_a = math.cos(mix * math.pi / 2.0)
         gain_b = math.sin(mix * math.pi / 2.0)
-        detune, width = p["detune"], p["width"]
-        view_a = self._bank_view("a_", {})
-        view_b = self._bank_view("b_", {})
+        detune, width = g("detune"), g("width")
+        shared = None
+        if not self.matrix.uses_note:
+            shared = (self._bank_view("a_", common.values), self._bank_view("b_", common.values), common.pitch)
         bend_ratio = 2.0 ** (self.bend * PITCH_BEND_RANGE / 12.0)
         out = np.zeros((2, n))
         for v in self.voices:
             if not v.active:
                 continue
+            if shared is not None:
+                view_a, view_b, pitch = shared
+            else:
+                mods = self.matrix.evaluate(p, sources, note_source(v.note))
+                view_a = self._bank_view("a_", mods.values)
+                view_b = self._bank_view("b_", mods.values)
+                pitch = mods.pitch
             out += v.render(n, view_a, view_b, midi_note_to_freq(v.note) * bend_ratio,
-                            -detune / 2.0, detune / 2.0,
+                            -detune / 2.0 + 100.0 * pitch["a"], detune / 2.0 + 100.0 * pitch["b"],
                             gain_a * view_a["volume"], gain_b * view_b["volume"], -width, width)
         out = out * p["master_volume"]
         return np.ascontiguousarray(np.tanh(out).T).astype(np.float32)
