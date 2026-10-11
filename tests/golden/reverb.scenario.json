@@ -1,0 +1,22 @@
+{
+ "seconds": 1.5,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "fx_reverb_on": true,
+  "fx_reverb_amount": 0.6
+ },
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}

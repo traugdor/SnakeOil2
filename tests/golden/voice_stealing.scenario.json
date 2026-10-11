@@ -1,0 +1,118 @@
+{
+ "seconds": 1.2,
+ "block": 256,
+ "seed": 1,
+ "params": {},
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 50,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 50
+  },
+  {
+   "t": 0.05,
+   "type": "note_on",
+   "note": 53,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 53
+  },
+  {
+   "t": 0.1,
+   "type": "note_on",
+   "note": 56,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 56
+  },
+  {
+   "t": 0.15000000000000002,
+   "type": "note_on",
+   "note": 59,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 59
+  },
+  {
+   "t": 0.2,
+   "type": "note_on",
+   "note": 62,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 62
+  },
+  {
+   "t": 0.25,
+   "type": "note_on",
+   "note": 65,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 65
+  },
+  {
+   "t": 0.30000000000000004,
+   "type": "note_on",
+   "note": 68,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 68
+  },
+  {
+   "t": 0.35000000000000003,
+   "type": "note_on",
+   "note": 71,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 71
+  },
+  {
+   "t": 0.4,
+   "type": "note_on",
+   "note": 74,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 74
+  },
+  {
+   "t": 0.45,
+   "type": "note_on",
+   "note": 77,
+   "velocity": 90
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 77
+  }
+ ]
+}

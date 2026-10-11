@@ -1,0 +1,22 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "a_osc2_wave": "sine",
+  "a_osc2_level": 0.8
+ },
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}

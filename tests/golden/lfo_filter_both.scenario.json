@@ -1,0 +1,27 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "lfo2_wave": "triangle",
+  "mod1_src": "LFO 2",
+  "mod1_scale": 0.8,
+  "mod1_dst": "A: Cutoff",
+  "mod2_src": "LFO 2",
+  "mod2_scale": -0.8,
+  "mod2_dst": "B: Cutoff"
+ },
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}

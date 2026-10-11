@@ -1,0 +1,29 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "mod1_src": "Mod Wheel",
+  "mod1_scale": 1.0,
+  "mod1_dst": "Mix"
+ },
+ "events": [
+  {
+   "t": 0,
+   "type": "cc",
+   "control": 1,
+   "value": 127
+  },
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}

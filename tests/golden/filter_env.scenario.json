@@ -1,0 +1,25 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "a_cutoff": 300.0,
+  "a_resonance": 0.5,
+  "a_flt_amount": 1.0,
+  "a_flt_decay": 0.2,
+  "a_flt_sustain": 0.1
+ },
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "a_cutoff": 500.0,
+  "a_keytrack": 1.0,
+  "a_vel_cutoff": 1.0
+ },
+ "events": [
+  {
+   "t": 0,
+   "type": "note_on",
+   "note": 36,
+   "velocity": 40
+  },
+  {
+   "t": 0.4,
+   "type": "note_off",
+   "note": 36
+  },
+  {
+   "t": 0.5,
+   "type": "note_on",
+   "note": 84,
+   "velocity": 120
+  },
+  {
+   "t": 0.9,
+   "type": "note_off",
+   "note": 84
+  }
+ ]
+}

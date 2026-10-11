@@ -1,0 +1,52 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {},
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 48,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 48
+  },
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 55,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 55
+  },
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  },
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 64,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 64
+  }
+ ]
+}

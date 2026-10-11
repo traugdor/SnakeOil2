@@ -1,0 +1,36 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {},
+ "events": [
+  {
+   "t": 0,
+   "type": "cc",
+   "control": 64,
+   "value": 127
+  },
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.2,
+   "type": "note_off",
+   "note": 60
+  },
+  {
+   "t": 0.3,
+   "type": "bend",
+   "value": 1.0
+  },
+  {
+   "t": 0.6,
+   "type": "cc",
+   "control": 64,
+   "value": 0
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+{
+ "seconds": 1.0,
+ "block": 256,
+ "seed": 1,
+ "params": {
+  "a_noise_level": 0.5,
+  "a_noise_color": "pink",
+  "a_osc1_level": 0.0,
+  "a_osc2_level": 0.0
+ },
+ "events": [
+  {
+   "t": 0.0,
+   "type": "note_on",
+   "note": 60,
+   "velocity": 100
+  },
+  {
+   "t": 0.6,
+   "type": "note_off",
+   "note": 60
+  }
+ ]
+}
