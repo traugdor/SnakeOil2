@@ -10,11 +10,16 @@ import numpy as np
 from .allocator import allocate
 from .constants import (BLOCK_SIZE, FIXED_VELOCITY, FORCED_RELEASE_S, PITCH_BEND_RANGE, PLAYABLE_VOICES,
                         POOL_SIZE, SAMPLE_RATE)
+from .constants import (CLIP_THRESHOLD, DELAY_DIVISION_BEATS, LIMITER_SILENCE_S,
+                        LIMITER_SILENCE_THRESHOLD)
 from .destinations import RATE, SRC_LFO1, SRC_LFO2
+from .effects import EffectChain
 from .lfo import LFO
+from .limiter import Limiter
 from .modmatrix import ModMatrix, note_source, smooth
 from .params import BANK_KEYS, PARAMS
 from .pitch import midi_note_to_freq
+from .tempo import TempoTracker
 from .voice import Voice
 
 
@@ -40,6 +45,12 @@ class Engine:
         self.lfo_values = [0.0, 0.0]
         self._wheel_s = 0.0
         self._at_s = 0.0
+        self.effects = EffectChain(sample_rate)
+        self.limiter = Limiter(sample_rate)
+        self.tempo = TempoTracker()
+        self._clock_stamp = None
+        self._limiter_silent_s = 0.0
+        self._meter = [0.0, 0.0, False]
 
     # ---- parameters -------------------------------------------------------------------------------
 
@@ -56,6 +67,86 @@ class Engine:
             i = int(pid[3:pid.index("_")])
             self.matrix.set_row(i, self.params["mod%d_src" % i], self.params["mod%d_scale" % i],
                                 self.params["mod%d_dst" % i])
+        elif pid == "limiter_on":
+            self.reset_limiter()
+
+    # ---- clock, meter, limiter ----------------------------------------------------------------------
+
+    def midi_clock(self, timestamp):
+        self.tempo.on_clock(timestamp)
+        self._clock_stamp = timestamp
+
+    def midi_start(self):
+        self.tempo.on_start()
+
+    def midi_stop(self):
+        self.tempo.on_stop()
+
+    def midi_continue(self):
+        self.tempo.on_continue()
+
+    def effective_bpm(self, now=None, manual=None):
+        if now is None:
+            now = self._clock_stamp
+        manual = self.params["tempo_bpm"] if manual is None else manual
+        return self.tempo.effective_bpm(manual, now=now if now is not None else 0.0)
+
+    def reset_limiter(self):
+        self.limiter.reset()
+        self._limiter_silent_s = 0.0
+
+    def limiter_reduction_db(self):
+        if not self.params["limiter_on"] or self.limiter.h <= 0.0:
+            return 0.0
+        return -20.0 * math.log10(max(1.0 - self.limiter.h, 1e-6))
+
+    def take_meter(self):
+        """Peaks since the last call, then reset. Lock-free: the audio thread picks up the fresh list."""
+        old, self._meter = self._meter, [0.0, 0.0, False]
+        return (old[0], old[1], old[2])
+
+    def _apply_effects(self, g, now):
+        p = self.params
+        fx = self.effects
+        fx.chorus.enabled = p["fx_chorus_on"]
+        fx.chorus.set_depth(g("fx_chorus_depth"))
+        d = fx.delay
+        d.enabled = p["fx_delay_on"]
+        d.set_pingpong(p["fx_delay_pingpong"])
+        d.set_feedback(g("fx_delay_feedback"))
+        d.set_damp(g("fx_delay_tone"))
+        if p["fx_delay_sync"]:
+            bpm = self.effective_bpm(now, manual=g("tempo_bpm"))
+            ms = 60000.0 / bpm * DELAY_DIVISION_BEATS[p["fx_delay_division"]]
+        else:
+            ms = g("fx_delay_time")
+        ms = min(max(ms, 1.0), 4000.0)
+        current = d.time_ms if d.target_ms is None else d.target_ms
+        if abs(ms - current) > 0.01:
+            d.set_time_target_ms(ms)
+        r = fx.reverb
+        r.enabled = p["fx_reverb_on"]
+        r.set_amount(g("fx_reverb_amount"))
+        r.set_room(g("fx_reverb_size"))
+        r.set_damp(g("fx_reverb_damp"))
+
+    def _output_stage(self, out):
+        driven = out * self.params["master_volume"]
+        if self.params["limiter_on"]:
+            driven, in_peak = self.limiter.process(driven)
+            if in_peak < LIMITER_SILENCE_THRESHOLD:
+                self._limiter_silent_s += driven.shape[1] / self.sr
+                if self._limiter_silent_s >= LIMITER_SILENCE_S:
+                    self.reset_limiter()
+            else:
+                self._limiter_silent_s = 0.0
+        out = np.tanh(driven)
+        m = self._meter
+        m[0] = max(m[0], float(np.abs(out[0]).max()))
+        m[1] = max(m[1], float(np.abs(out[1]).max()))
+        if float(np.abs(driven).max()) >= CLIP_THRESHOLD:
+            m[2] = True
+        return out
 
     # ---- notes and controllers ---------------------------------------------------------------------
 
@@ -199,5 +290,7 @@ class Engine:
             out += v.render(n, view_a, view_b, midi_note_to_freq(v.note) * bend_ratio,
                             -detune / 2.0 + 100.0 * pitch["a"], detune / 2.0 + 100.0 * pitch["b"],
                             gain_a * view_a["volume"], gain_b * view_b["volume"], -width, width)
-        out = out * p["master_volume"]
-        return np.ascontiguousarray(np.tanh(out).T).astype(np.float32)
+        self._apply_effects(g, now)
+        out = self.effects.process(out)
+        out = self._output_stage(out)
+        return np.ascontiguousarray(out.T).astype(np.float32)
