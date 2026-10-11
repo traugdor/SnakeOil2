@@ -51,6 +51,7 @@ class Engine:
         self._clock_stamp = None
         self._limiter_silent_s = 0.0
         self._meter = [0.0, 0.0, False]
+        self._activity = [0, 0]
 
     # ---- parameters -------------------------------------------------------------------------------
 
@@ -104,6 +105,16 @@ class Engine:
         """Peaks since the last call, then reset. Lock-free: the audio thread picks up the fresh list."""
         old, self._meter = self._meter, [0.0, 0.0, False]
         return (old[0], old[1], old[2])
+
+    def take_activity(self):
+        """Maximum (held, tails) voice counts since the last call, then reset (lock-free swap)."""
+        old, self._activity = self._activity, [0, 0]
+        return (old[0], old[1])
+
+    def _note_activity(self):
+        a = self._activity
+        a[0] = max(a[0], self.held_count)
+        a[1] = max(a[1], self.tail_count)
 
     def _apply_effects(self, g, now):
         p = self.params
@@ -176,6 +187,7 @@ class Engine:
         vel = velocity / 127.0 if self.params["velocity_on"] else FIXED_VELOCITY
         voice.note_on(note, vel, self._order, stolen, self._rng)
         self._last_note = note
+        self._note_activity()
 
     def note_off(self, note):
         if self.sustain:
@@ -293,4 +305,5 @@ class Engine:
         self._apply_effects(g, now)
         out = self.effects.process(out)
         out = self._output_stage(out)
+        self._note_activity()
         return np.ascontiguousarray(out.T).astype(np.float32)
