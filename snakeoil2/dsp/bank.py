@@ -69,14 +69,23 @@ class Bank:
             e.level = 0.0
 
     def _osc1_signal(self, t, dt, p):
+        """Return ``(audible, modulator)``. Layering adds the two waves (louder than either alone);
+        the modulator is the layer scaled back to peak 1 so the modulation depth does not change."""
         saw_on, sq_on = p["osc1_saw"], p["osc1_square"]
         if saw_on and sq_on:
-            return 0.5 * (saw(t, dt) + pulse(t, dt, duty_from_pwm(p["osc1_pwm"])))
+            # Juno-style layering: the pulse is high at the top of the saw's rising ramp, so the two add.
+            # (A pulse that is high while the ramp is low would cancel part of the saw and sound quieter.)
+            duty = duty_from_pwm(p["osc1_pwm"])
+            layer = saw(t, dt) + pulse(np.mod(t + duty, 1.0), dt, duty)
+            return layer, 0.5 * layer
         if saw_on:
-            return saw(t, dt)
+            w = saw(t, dt)
+            return w, w
         if sq_on:
-            return pulse(t, dt, duty_from_pwm(p["osc1_pwm"]))
-        return np.zeros(len(t))
+            w = pulse(t, dt, duty_from_pwm(p["osc1_pwm"]))
+            return w, w
+        silent = np.zeros(len(t))
+        return silent, silent
 
     def _osc2_signal(self, n, t1, f1, f2, mod, p):
         sr = self.sr
@@ -134,9 +143,9 @@ class Bank:
         f2 = min(freq * semitones_to_ratio(p["osc2_coarse"], p["osc2_fine"])
                  * (2.0 if p["osc2_octave_up"] else 1.0), limit)
         t1 = self.osc1.advance(f1, sr, n)
-        mod = self._osc1_signal(t1, f1 / sr, p)
+        audible, mod = self._osc1_signal(t1, f1 / sr, p)
         level2 = p["osc2_level"]
-        mix = p["osc1_level"] * mod
+        mix = p["osc1_level"] * audible
         if level2 > 0.0:
             mix = mix + level2 * self._osc2_signal(n, t1, f1, f2, mod, p)
         else:

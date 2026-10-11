@@ -90,9 +90,19 @@ def test_every_osc2_wave_renders():
         assert rms(y) > 0.005, wave
 
 
-def test_square_layers_with_saw_without_clipping():
-    _, y = run(view(osc1_saw=True, osc1_square=True, osc2_level=0.0, osc1_level=1.0, cutoff=20000.0))
-    assert np.abs(y).max() < 0.22 * 1.01
+def test_layering_saw_and_square_is_louder_than_either_alone():
+    base = dict(osc2_level=0.0, osc1_level=1.0, cutoff=20000.0)
+    both = rms(run(view(osc1_saw=True, osc1_square=True, **base))[1])
+    saw = rms(run(view(osc1_saw=True, osc1_square=False, **base))[1])
+    square = rms(run(view(osc1_saw=False, osc1_square=True, **base))[1])
+    assert both > saw and both > square
+
+
+def test_layering_does_not_change_the_modulation_depth():
+    base = dict(mod_mode="RING", osc2_level=0.8, osc1_level=0.0, osc2_wave="sine", cutoff=20000.0)
+    peak = np.abs(run(view(osc1_saw=True, osc1_square=True, **base))[1]).max()
+    # amp 0.22 x osc2 level 0.8 x modulator <= 1: a layer that reached 2 would exceed this bound
+    assert peak <= 0.22 * 0.8 * 1.02
 
 
 def test_filter_darkens_and_20k_is_bypass():
