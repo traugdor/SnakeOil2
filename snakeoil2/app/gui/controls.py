@@ -1,4 +1,5 @@
 """Build one labelled GUI control for a ParamDef; every control writes through the Controller."""
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from ...dsp.params import CHOICE, TOGGLE
@@ -25,13 +26,18 @@ def _format(p):
     return None
 
 
-def build_control(controller, p):
+def build_control(controller, p, compact=False):
+    """One labelled control. ``compact`` packs it tightly for the grid layout (no label on combos)."""
     box = QWidget()
     lay = QVBoxLayout(box)
-    lay.setContentsMargins(2, 2, 2, 2)
-    lay.setSpacing(2)
+    m = 0 if compact else 2
+    lay.setContentsMargins(m, m, m, m)
+    lay.setSpacing(0 if compact else 2)
     label = QLabel(p.label)
     label.setToolTip(p.id)
+    if compact:
+        label.setAlignment(Qt.AlignHCenter)
+        label.setStyleSheet("font-size: 10px; color: #8f98ad;")
     holder = {}
 
     if p.kind == TOGGLE:
@@ -47,7 +53,9 @@ def build_control(controller, p):
         w.setCurrentText(controller.values[p.id])
         w.currentTextChanged.connect(lambda text: controller.set_param(p.id, text))
         holder["get"], holder["set"] = w.currentText, w.setCurrentText
-        lay.addWidget(label)
+        if not compact:
+            lay.addWidget(label)
+        w.setToolTip(p.id + ": " + p.label)
         lay.addWidget(w)
     else:
         if p.id.startswith("mod") and p.id.endswith("_scale"):
@@ -56,10 +64,19 @@ def build_control(controller, p):
             w = ValueSlider(p.lo, p.hi, controller.values[p.id], _format(p), log=p.scale == "log")
         else:
             w = Knob(p.lo, p.hi, controller.values[p.id], _format(p), log=p.scale == "log")
+        if compact and isinstance(w, Knob):
+            w.setMinimumSize(0, 0)
+            w.setFixedSize(54, 62)
+        elif compact and isinstance(w, ValueSlider):
+            w._slider.setFixedHeight(54)
+            box.setMinimumWidth(50)
+        elif compact and isinstance(w, BipolarSlider):
+            w.setMaximumWidth(150)
         w.valueChanged.connect(lambda v: controller.set_param(p.id, float(v)))
         holder["get"], holder["set"] = w.value, w.setValue
         lay.addWidget(w)
-        lay.addWidget(label)
+        if not (compact and isinstance(w, BipolarSlider)):
+            lay.addWidget(label)
 
     def follow(pid):
         if pid == p.id and holder["get"]() != controller.values[p.id]:

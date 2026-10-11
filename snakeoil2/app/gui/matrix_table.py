@@ -12,6 +12,8 @@ class MatrixTable(QWidget):
         super().__init__()
         grid = QGridLayout(self)
         grid.setContentsMargins(2, 2, 2, 2)
+        grid.setHorizontalSpacing(4)
+        grid.setVerticalSpacing(1)
         for col, title in enumerate(("Source", "Scale", "Destination")):
             grid.addWidget(QLabel(title), 0, col)
         self.rows = []
@@ -20,7 +22,7 @@ class MatrixTable(QWidget):
             row = []
             for col, key in enumerate(("src", "scale", "dst")):
                 pid = "mod%d_%s" % (i, key)
-                w = build_control(controller, PARAMS.by_id[pid])
+                w = build_control(controller, PARAMS.by_id[pid], compact=True)
                 self.controls[pid] = w
                 grid.addWidget(w, i, col)
                 row.append(w)

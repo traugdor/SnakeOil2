@@ -36,52 +36,104 @@ class MainWindow(QMainWindow):
 
     # ---- layout ------------------------------------------------------------------------------------
 
-    def _group_box(self, title, group):
+    def _cell(self, prefix, keys):
+        """A vertical stack of compact controls (for example Saw over Square)."""
+        cell = QWidget()
+        lay = QVBoxLayout(cell)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(1)
+        lay.setAlignment(Qt.AlignTop)
+        for key in keys:
+            pid = prefix + key
+            w = build_control(self.controller, PARAMS.by_id[pid], compact=True)
+            self.controls[pid] = w
+            lay.addWidget(w)
+        return cell
+
+    def _table(self, title, groups, banks=True):
+        """A group box with column headers once. With ``banks`` the same cells repeat for bank A and bank B."""
         box = QGroupBox(title)
         grid = QGridLayout(box)
-        grid.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        col = 0
-        for p in PARAMS:
-            if p.group != group or p.id in self.controls:
-                continue
-            w = build_control(self.controller, p)
-            self.controls[p.id] = w
-            grid.addWidget(w, 0, col)
-            col += 1
+        grid.setContentsMargins(4, 4, 4, 2)
+        grid.setHorizontalSpacing(3)
+        grid.setVerticalSpacing(2)
+        rows = (("A", "a_"), ("B", "b_")) if banks else (("", ""),)
+        col = 1 if banks else 0
+        for head, cells in groups:
+            label = QLabel(head)
+            label.setObjectName("colhead")
+            label.setAlignment(Qt.AlignCenter)
+            grid.addWidget(label, 0, col, 1, len(cells))
+            for cell in cells:
+                for r, (_, prefix) in enumerate(rows, start=1):
+                    grid.addWidget(self._cell(prefix, cell), r, col, Qt.AlignTop | Qt.AlignHCenter)
+                col += 1
+        if banks:
+            for r, (letter, _) in enumerate(rows, start=1):
+                tag = QLabel(letter)
+                tag.setObjectName("bank" + letter)
+                grid.addWidget(tag, r, 0, Qt.AlignTop | Qt.AlignHCenter)
+        grid.setColumnStretch(col, 1)
+        grid.setRowStretch(len(rows) + 1, 1)     # spare height goes below the controls
+        box.next_col = col
         return box
 
-    def _bank_box(self, letter):
-        outer = QGroupBox("Bank %s" % letter)
-        lay = QGridLayout(outer)
-        lay.setAlignment(Qt.AlignTop)
-        for i, part in enumerate(BANK_PARTS):
-            lay.addWidget(self._group_box(part, "Bank %s / %s" % (letter, part)), i // 2, i % 2)
-        return outer
-
     def _build_body(self):
-        body = QWidget()
-        row = QHBoxLayout(body)
-        row.setAlignment(Qt.AlignTop)
-        row.addWidget(self._bank_box("A"))
-        centre = QVBoxLayout()
-        centre.addWidget(self._group_box("Banks", "Banks"))
-        master = self._group_box("Master", "Master")
-        master.layout().addWidget(self.meter, 0, 3)
-        master.layout().addWidget(self.gr_label, 1, 3)
-        centre.addWidget(master)
-        centre.addStretch(1)
-        row.addLayout(centre)
-        row.addWidget(self._bank_box("B"))
+        osc = self._table("Oscillators", (
+            ("OSC1", (("osc1_saw", "osc1_square", "osc1_octave_down"), ("osc1_pwm",), ("osc1_level",))),
+            ("Mod", (("mod_mode",),)),
+            ("OSC2", (("osc2_wave", "osc2_octave_up"), ("osc2_pwm",), ("osc2_level",), ("osc2_coarse",),
+                      ("osc2_fine",))),
+            ("Noise", (("noise_color",), ("noise_level",))),
+            ("Out", (("volume",),)),
+        ))
+        filt = self._table("Filter and envelopes", (
+            ("Filter", (("cutoff",), ("resonance",), ("flt_amount",), ("keytrack",), ("vel_cutoff",))),
+            ("Filter Env", (("flt_attack",), ("flt_decay",), ("flt_sustain",), ("flt_release",))),
+            ("Amp Env", (("amp_attack",), ("amp_decay",), ("amp_sustain",), ("amp_release",))),
+        ))
+        mixer = self._table("Mix and master", (
+            ("Banks", (("mix",), ("detune",), ("width",))),
+            ("Master", (("master_volume",), ("velocity_on", "limiter_on"))),
+        ), banks=False)
+        mixer.layout().addWidget(self.meter, 1, mixer.next_col)
+        mixer.layout().addWidget(self.gr_label, 2, mixer.next_col)
+        lfo = self._table("LFOs", (
+            ("LFO 1", (("lfo1_rate",), ("lfo1_wave",))),
+            ("LFO 2", (("lfo2_rate",), ("lfo2_wave",))),
+        ), banks=False)
+        mm = QGroupBox("Mod matrix")
+        mm_lay = QVBoxLayout(mm)
+        mm_lay.setContentsMargins(4, 4, 4, 2)
+        mm_lay.addWidget(self.matrix)
+        fx = self._table("Effects and tempo", (
+            ("Chorus", (("fx_chorus_on",), ("fx_chorus_depth",))),
+            ("Delay", (("fx_delay_on", "fx_delay_pingpong", "fx_delay_sync"), ("fx_delay_time",),
+                       ("fx_delay_feedback",), ("fx_delay_tone",), ("fx_delay_division",))),
+            ("Reverb", (("fx_reverb_on",), ("fx_reverb_amount",), ("fx_reverb_size",), ("fx_reverb_damp",))),
+            ("Tempo", (("tempo_bpm",),)),
+        ), banks=False)
+
+        left = QVBoxLayout()
+        left.setSpacing(2)
+        left.addWidget(osc)
+        left.addWidget(filt)
         right = QVBoxLayout()
-        for title in ("LFO 1", "LFO 2"):
-            right.addWidget(self._group_box(title, title))
-        mm = QGroupBox("Mod Matrix")
-        QVBoxLayout(mm).addWidget(self.matrix)
+        right.setSpacing(2)
+        right.addWidget(mixer)
+        right.addWidget(lfo)
         right.addWidget(mm)
-        right.addWidget(self._group_box("Tempo", "Tempo"))
-        right.addWidget(self._group_box("Effects", "Effects"))
-        right.addStretch(1)
-        row.addLayout(right)
+        top = QHBoxLayout()
+        top.setAlignment(Qt.AlignTop)
+        top.addLayout(left)
+        top.addLayout(right)
+        body = QWidget()
+        outer = QVBoxLayout(body)
+        outer.setContentsMargins(4, 2, 4, 2)
+        outer.setSpacing(2)
+        outer.addLayout(top)
+        outer.addWidget(fx)
+        outer.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(body)
