@@ -22,7 +22,7 @@ class Bank:
         self.velocity = 0.0
         self.gate = False
         self.noise_pos = 0
-        self._bypassed = False
+        self._last_coeffs = None
 
     @property
     def active(self):
@@ -50,7 +50,7 @@ class Bank:
         self.flt_env.level = 0.0
         self.flt_env.note_on()
         self.lpf.reset()
-        self._bypassed = False
+        self._last_coeffs = None
 
     def note_off(self):
         self.gate = False
@@ -146,9 +146,10 @@ class Bank:
         env_mean = float(np.mean(self.flt_env.process(n)))
         coeffs = self._coeffs(p, env_mean)
         if coeffs is not None:
-            if self._bypassed:
-                self.lpf.reset()
             mix = self.lpf.process(mix, coeffs)
-        self._bypassed = coeffs is None
+            self._last_coeffs = coeffs
+        else:
+            # Bypassed: keep the filter state following the input so there is no click when it re-enters.
+            self.lpf.process(mix, self._last_coeffs or lpf_coefficients(LPF_MAX_HZ, 0.0, self.sr))
         amp = AMP_SCALE * (0.3 + 0.7 * self.velocity)
         return mix * self.env.process(n) * amp

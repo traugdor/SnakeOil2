@@ -20,7 +20,8 @@ class PatchError(Exception):
 
 def validate_name(name):
     if (not isinstance(name, str) or not _NAME_RE.match(name) or name.endswith((".", " "))
-            or name.split(".")[0].strip().lower() in _RESERVED):
+            or name.split(".")[0].strip().lower() in _RESERVED
+            or name.lower() == "patch_settings"):
         raise PatchError("invalid patch name: %r" % (name,))
     return name
 
@@ -89,7 +90,7 @@ class PatchStore:
             data = json.loads(path.read_text(encoding="utf-8"))
         except FileNotFoundError:
             raise PatchError("no such patch: %s" % name)
-        except (OSError, ValueError) as e:
+        except (OSError, ValueError, RecursionError) as e:
             raise PatchError("cannot read patch %s: %s" % (name, e))
         return resolve(data)
 

@@ -158,7 +158,10 @@ class ParamTable:
             raise ValueError("%s: not one of %s: %r" % (pid, p.choices, value))
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError("%s: not a number: %r" % (pid, value))
-        v = float(value)
+        try:
+            v = float(value)
+        except OverflowError:
+            raise ValueError("%s: out of range: too large" % pid)
         if not math.isfinite(v):
             raise ValueError("%s: not finite: %r" % (pid, value))
         return min(max(v, p.lo), p.hi)

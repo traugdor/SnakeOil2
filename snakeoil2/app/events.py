@@ -53,5 +53,5 @@ def apply_event(engine, event):
             engine.panic()
         elif kind == "reset_limiter":
             engine.reset_limiter()
-    except (KeyError, ValueError, TypeError, IndexError):
+    except Exception:
         pass

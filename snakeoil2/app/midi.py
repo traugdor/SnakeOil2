@@ -1,4 +1,5 @@
 """MIDI input: mido messages become engine events on an EventQueue."""
+import sys
 import time
 
 
@@ -49,9 +50,15 @@ class MidiInput:
     def start(self):
         import mido
         names = self.ports if self.ports else mido.get_input_names()
+        opened = []
         for name in names:
-            self._open.append(mido.open_input(name, callback=self._on_message))
-        return list(names)
+            try:
+                self._open.append(mido.open_input(name, callback=self._on_message))
+            except Exception as e:
+                print("warning: cannot open MIDI input %r: %s" % (name, e), file=sys.stderr)
+                continue
+            opened.append(name)
+        return opened
 
     def stop(self):
         for port in self._open:

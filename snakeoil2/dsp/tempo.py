@@ -2,8 +2,6 @@
 
 import math
 import statistics
-import threading
-import time
 from collections import deque
 
 from .constants import CLOCK_PPQN, TEMPO_MAX, TEMPO_MIN
@@ -17,13 +15,12 @@ EMA_ALPHA = 0.2
 class TempoTracker:
     """Estimates the external tempo from MIDI clock pulses.
 
-    One writer (the MIDI thread) calls ``on_*``; readers (audio/GUI threads)
-    call ``external_bpm`` / ``effective_bpm``. Timestamps come from the caller
-    (``time.perf_counter()`` in production) so tests can feed synthetic times.
+    Everything runs on the audio thread (clock events arrive through the event
+    queue), so there is no locking. Timestamps come from the caller
+    (the shell supplies a monotonic clock) so tests can feed synthetic times.
     """
 
     def __init__(self):
-        self._lock = threading.Lock()
         self._stamps = deque(maxlen=HISTORY)
         self._ema = None
         self._bpm = None
@@ -33,37 +30,36 @@ class TempoTracker:
     def on_clock(self, timestamp):
         if not math.isfinite(timestamp):
             return
-        with self._lock:
-            if self._stamps and timestamp - self._stamps[-1] > TIMEOUT_S:
-                self._stamps.clear()
-                self._ema = None
-                self._bpm = None
-            if self._stamps and timestamp <= self._stamps[-1]:
-                return
-            self._stamps.append(timestamp)
-            self._last = timestamp
-            if len(self._stamps) < MIN_PULSES:
-                return
-            stamps = list(self._stamps)
-            intervals = [b - a for a, b in zip(stamps, stamps[1:])]
-            # The median finds the typical interval and rejects stalls and
-            # dropped pulses; the mean of the rest averages out delivery jitter
-            # (timestamp noise telescopes, so the error shrinks with window length).
-            typical = statistics.median(intervals)
-            kept = [d for d in intervals if 0.5 * typical <= d <= 1.5 * typical]
-            # Batched delivery can leave no interval near the median; fall back
-            # to the mean of everything, then drop implausible estimates.
-            mean = statistics.fmean(kept or intervals)
-            if mean <= 0.0:
-                return
-            raw = 60.0 / (CLOCK_PPQN * mean)
-            if not TEMPO_MIN / 2 <= raw <= TEMPO_MAX * 2:
-                return
-            if self._ema is None:
-                self._ema = raw
-            else:
-                self._ema += EMA_ALPHA * (raw - self._ema)
-            self._bpm = round(self._ema, 1)
+        if self._stamps and timestamp - self._stamps[-1] > TIMEOUT_S:
+            self._stamps.clear()
+            self._ema = None
+            self._bpm = None
+        if self._stamps and timestamp <= self._stamps[-1]:
+            return
+        self._stamps.append(timestamp)
+        self._last = timestamp
+        if len(self._stamps) < MIN_PULSES:
+            return
+        stamps = list(self._stamps)
+        intervals = [b - a for a, b in zip(stamps, stamps[1:])]
+        # The median finds the typical interval and rejects stalls and
+        # dropped pulses; the mean of the rest averages out delivery jitter
+        # (timestamp noise telescopes, so the error shrinks with window length).
+        typical = statistics.median(intervals)
+        kept = [d for d in intervals if 0.5 * typical <= d <= 1.5 * typical]
+        # Batched delivery can leave no interval near the median; fall back
+        # to the mean of everything, then drop implausible estimates.
+        mean = statistics.fmean(kept or intervals)
+        if mean <= 0.0:
+            return
+        raw = 60.0 / (CLOCK_PPQN * mean)
+        if not TEMPO_MIN / 2 <= raw <= TEMPO_MAX * 2:
+            return
+        if self._ema is None:
+            self._ema = raw
+        else:
+            self._ema += EMA_ALPHA * (raw - self._ema)
+        self._bpm = round(self._ema, 1)
 
     def on_start(self):
         self.running = True
@@ -74,15 +70,13 @@ class TempoTracker:
     def on_stop(self):
         self.running = False
 
-    def external_bpm(self, now=None):
-        if now is None:
-            now = time.perf_counter()
+    def external_bpm(self, now):
         bpm, last = self._bpm, self._last
         if bpm is None or last is None or now - last > TIMEOUT_S:
             return None
         return min(max(bpm, TEMPO_MIN), TEMPO_MAX)
 
-    def effective_bpm(self, manual_bpm, now=None):
+    def effective_bpm(self, manual_bpm, now):
         external = self.external_bpm(now)
         bpm = manual_bpm if external is None else external
         return min(max(bpm, TEMPO_MIN), TEMPO_MAX)

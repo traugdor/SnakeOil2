@@ -13,7 +13,7 @@ from .constants import (BLOCK_SIZE, FIXED_VELOCITY, FORCED_RELEASE_S, PITCH_BEND
 from .constants import (CLIP_THRESHOLD, DELAY_DIVISION_BEATS, LIMITER_SILENCE_S,
                         LIMITER_SILENCE_THRESHOLD)
 from .destinations import RATE, SRC_LFO1, SRC_LFO2
-from .effects import EffectChain
+from .effects import Chorus, Delay, EffectChain, Reverb
 from .lfo import LFO
 from .limiter import Limiter
 from .modmatrix import ModMatrix, note_source, smooth
@@ -119,6 +119,13 @@ class Engine:
     def _apply_effects(self, g, now):
         p = self.params
         fx = self.effects
+        # An effect that was off holds stale audio in its buffers: start it fresh when it is switched on.
+        if p["fx_chorus_on"] and not fx.chorus.enabled:
+            fx.chorus = Chorus(self.sr)
+        if p["fx_delay_on"] and not fx.delay.enabled:
+            fx.delay = Delay(self.sr)
+        if p["fx_reverb_on"] and not fx.reverb.enabled:
+            fx.reverb = Reverb(self.sr)
         fx.chorus.enabled = p["fx_chorus_on"]
         fx.chorus.set_depth(g("fx_chorus_depth"))
         d = fx.delay

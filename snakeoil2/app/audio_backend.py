@@ -47,6 +47,8 @@ def _resolve_device_index(sd, device):
         return device
     if device is None:
         return None
+    if isinstance(device, str) and device.strip().isdigit():
+        return int(device)
     devices = sd.query_devices()
     for i, dev in enumerate(devices):
         if device.lower() in dev["name"].lower() and dev["max_output_channels"] > 0:
