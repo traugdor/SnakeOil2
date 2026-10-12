@@ -2,7 +2,7 @@
 import numpy as np
 
 from . import noise
-from .constants import (AMP_SCALE, FLT_ENV_OCTAVES, FLT_VEL_OCTAVES, FM_INDEX_MAX, FORCED_RELEASE_S,
+from .constants import (AMP_SCALE, SQUARE_LAYER_LEVEL, FLT_ENV_OCTAVES, FLT_VEL_OCTAVES, FM_INDEX_MAX, FORCED_RELEASE_S,
                         NOISE_TABLE_LEN)
 from .envelopes import IDLE, Envelope
 from .filters import LPF_MAX_HZ, LPF_MIN_HZ, LowPass, lpf_coefficients
@@ -69,15 +69,15 @@ class Bank:
             e.level = 0.0
 
     def _osc1_signal(self, t, dt, p):
-        """Return ``(audible, modulator)``. Layering adds the two waves (louder than either alone);
-        the modulator is the layer scaled back to peak 1 so the modulation depth does not change."""
+        """Return ``(audible, modulator)``, both the same signal, as in V1.
+
+        With both toggles on this is V1's Juno-style layer: the saw plus ``SQUARE_LAYER_LEVEL`` times a
+        pulse that is high at the top of the saw's rising ramp, so the two add instead of cancelling."""
         saw_on, sq_on = p["osc1_saw"], p["osc1_square"]
         if saw_on and sq_on:
-            # Juno-style layering: the pulse is high at the top of the saw's rising ramp, so the two add.
-            # (A pulse that is high while the ramp is low would cancel part of the saw and sound quieter.)
             duty = duty_from_pwm(p["osc1_pwm"])
-            layer = saw(t, dt) + pulse(np.mod(t + duty, 1.0), dt, duty)
-            return layer, 0.5 * layer
+            layer = saw(t, dt) + SQUARE_LAYER_LEVEL * pulse(np.mod(t + duty, 1.0), dt, duty)
+            return layer, layer
         if saw_on:
             w = saw(t, dt)
             return w, w

@@ -90,19 +90,36 @@ def test_every_osc2_wave_renders():
         assert rms(y) > 0.005, wave
 
 
-def test_layering_saw_and_square_is_louder_than_either_alone():
+def test_layer_is_the_v1_juno_layer_saw_plus_half_a_top_aligned_pulse():
+    """V1: saw + Sq Level (0.5) x a pulse that is high at the top of the saw's ramp."""
+    from snakeoil2.dsp.oscillators import pulse, saw
+
+    f1 = 261.6256 * 0.5                                            # OSC1 plays an octave down
+    dt = f1 / SR
+    t = np.mod(np.arange(4096) * dt, 1.0)
+    expected = saw(t, dt) + 0.5 * pulse(np.mod(t + 0.5, 1.0), dt, 0.5)
+    b = Bank(SR)
+    b.note_on(60, 1.0, False, np.random.default_rng(1))
+    b.osc1.phase = 0.0
+    p = view(osc1_saw=True, osc1_square=True, osc2_level=0.0, osc1_level=1.0, cutoff=20000.0,
+             amp_attack=0.001, amp_sustain=1.0)
+    out = np.concatenate([b.render(256, p, 261.6256, 0.0) for _ in range(16)])
+    steady = slice(1024, 4096)                                     # past the 1 ms attack
+    gain = out[steady] / expected[steady]
+    assert np.allclose(gain, gain[0], rtol=1e-3, atol=1e-3)       # same shape, constant amplitude
+
+
+def test_layer_is_louder_than_the_saw_alone_but_not_doubled():
     base = dict(osc2_level=0.0, osc1_level=1.0, cutoff=20000.0)
     both = rms(run(view(osc1_saw=True, osc1_square=True, **base))[1])
     saw = rms(run(view(osc1_saw=True, osc1_square=False, **base))[1])
-    square = rms(run(view(osc1_saw=False, osc1_square=True, **base))[1])
-    assert both > saw and both > square
+    assert saw * 1.1 < both < saw * 1.8
 
 
-def test_layering_does_not_change_the_modulation_depth():
+def test_the_layer_is_also_the_modulator_exactly_as_in_v1():
     base = dict(mod_mode="RING", osc2_level=0.8, osc1_level=0.0, osc2_wave="sine", cutoff=20000.0)
     peak = np.abs(run(view(osc1_saw=True, osc1_square=True, **base))[1]).max()
-    # amp 0.22 x osc2 level 0.8 x modulator <= 1: a layer that reached 2 would exceed this bound
-    assert peak <= 0.22 * 0.8 * 1.02
+    assert 0.22 * 0.8 * 1.02 < peak <= 0.22 * 0.8 * 1.5 * 1.02    # layer peak is 1.5, unnormalised
 
 
 def test_filter_darkens_and_20k_is_bypass():

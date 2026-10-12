@@ -21,7 +21,7 @@ through chorus, delay and reverb, then master volume, an optional auto limiter a
 
 ### OSC1
 
-- **Saw** and **Square** are two toggles. Switch on one, both (layered at half level each) or neither (OSC1 is then
+- **Saw** and **Square** are two toggles. Switch on one, both (the square is added to the saw at half level, with its high part at the top of the saw so the two add) or neither (OSC1 is then
   silent, which is useful when you only want OSC2).
 - **PWM** sets the pulse width of the square between 25% and 75% (0.5 is a plain square).
 - **Level** sets how loud OSC1 is in the mix. OSC1 always acts as the modulator for OSC2, whatever its level.
