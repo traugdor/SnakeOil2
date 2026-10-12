@@ -91,3 +91,31 @@ def test_fit_to_content_is_capped_to_the_screen(tmp_path):
     w, *_ = make(tmp_path)
     w.fit_to_content(max_size=(400, 300))
     assert w.width() <= 400 and w.height() <= 300
+
+
+def test_fit_to_content_is_tight(tmp_path):
+    """The fitted window is the smallest without scrollbars (plus a small margin), not a padded hint."""
+    w, *_ = make(tmp_path)
+    w.fit_to_content(max_size=(4000, 4000), margin=10)
+    app.processEvents()
+    scroll = w.centralWidget()
+    assert not scroll.horizontalScrollBar().isVisible() and not scroll.verticalScrollBar().isVisible()
+    w.resize(w.width() - 40, w.height())
+    app.processEvents()
+    assert scroll.horizontalScrollBar().isVisible()          # 40 px narrower needs a scrollbar again
+    w.fit_to_content(max_size=(4000, 4000), margin=10)
+    w.resize(w.width(), w.height() - 40)
+    app.processEvents()
+    assert scroll.verticalScrollBar().isVisible()
+
+
+def test_fit_to_content_ignores_an_inflated_size_hint(tmp_path):
+    w, *_ = make(tmp_path)
+    body = w.centralWidget().widget()
+    w.show()
+    app.processEvents()
+    real = body.minimumSizeHint()          # measured once the window is shown and styled
+    body.sizeHint = lambda: real * 2                           # what a mis-measured hint looks like
+    w.fit_to_content(max_size=(4000, 4000), margin=10)
+    app.processEvents()
+    assert w.width() < real.width() * 1.3 and w.height() < real.height() * 1.3 + 100

@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (QComboBox, QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox,
+from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox,
                                QScrollArea, QToolBar, QVBoxLayout, QWidget, QMainWindow)
 
 from ...dsp.params import PARAMS
@@ -160,19 +160,47 @@ class MainWindow(QMainWindow):
         tb.addWidget(spacer)
         tb.addWidget(self.leds)
 
-    def fit_to_content(self, margin=30, max_size=None):
-        """Size the window to the controls so no scrollbars appear, capped to ``max_size`` (default: the screen).
+    def fit_to_content(self, margin=10, max_size=None):
+        """Open at the smallest size that shows every control without scrollbars, plus ``margin``.
 
-        The content's own size hint already reflects the fonts and scaling on this machine."""
-        hint = self.centralWidget().widget().sizeHint()
-        chrome = self.statusBar().sizeHint().height() + sum(
-            bar.sizeHint().height() for bar in self.findChildren(QToolBar))
-        width, height = hint.width() + margin, hint.height() + chrome + margin
+        Qt's size hints are inflated until the stylesheet fonts are applied, so instead of trusting a hint this
+        shows the window (invisibly) and searches for the smallest width and height with no scrollbar. The
+        result is capped to ``max_size`` (default: the screen)."""
         if max_size is None:
             screen = self.screen()
-            max_size = (screen.availableGeometry().width(), screen.availableGeometry().height()) if screen else (
-                width, height)
-        self.resize(min(width, max_size[0]), min(height, max_size[1]))
+            area = screen.availableGeometry() if screen else None
+            max_size = (area.width(), area.height()) if area else (4000, 4000)
+        scroll = self.centralWidget()
+        was_visible = self.isVisible()
+        if not was_visible:
+            self.setWindowOpacity(0.0)
+            self.show()
+        max_w, max_h = max_size
+
+        def needs_bar(width, height, bar):
+            self.resize(width, height)
+            QApplication.processEvents()
+            return bar().isVisible()
+
+        lo, hi = 300, max_w                       # narrowest width with no horizontal bar, at full height
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if needs_bar(mid, max_h, scroll.horizontalScrollBar):
+                lo = mid + 1
+            else:
+                hi = mid
+        width = lo
+        lo, hi = 200, max_h                       # shortest height with no vertical bar, at that width
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if needs_bar(width, mid, scroll.verticalScrollBar):
+                lo = mid + 1
+            else:
+                hi = mid
+        self.resize(min(width + margin, max_w), min(lo + margin, max_h))
+        QApplication.processEvents()
+        if not was_visible:
+            self.setWindowOpacity(1.0)
 
     # ---- patch actions -----------------------------------------------------------------------------
 
