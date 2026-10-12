@@ -12,6 +12,6 @@ def run_gui(engine, queue, store, patch_name, audio, midi):
     # The engine already holds the patch loaded in main(); mirror it into the controller without re-queueing.
     controller.load_patch(patch_name)
     window = MainWindow(controller, engine)
-    window.resize(1180, 690)
+    window.fit_to_content()
     window.show()
     return app.exec()

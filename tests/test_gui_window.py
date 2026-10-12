@@ -75,3 +75,19 @@ def test_save_as_roundtrip_through_the_window_actions(tmp_path):
 def test_init_patch_disables_save_rename_delete(tmp_path):
     w, *_ = make(tmp_path)
     assert not w.act_save.isEnabled() and not w.act_rename.isEnabled() and not w.act_delete.isEnabled()
+
+
+def test_fit_to_content_leaves_no_scrollbars(tmp_path):
+    w, *_ = make(tmp_path)
+    w.fit_to_content(max_size=(4000, 4000))      # the offscreen test screen is only 800 px wide
+    w.show()
+    app.processEvents()
+    scroll = w.centralWidget()
+    assert not scroll.horizontalScrollBar().isVisible()
+    assert not scroll.verticalScrollBar().isVisible()
+
+
+def test_fit_to_content_is_capped_to_the_screen(tmp_path):
+    w, *_ = make(tmp_path)
+    w.fit_to_content(max_size=(400, 300))
+    assert w.width() <= 400 and w.height() <= 300

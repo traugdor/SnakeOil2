@@ -160,6 +160,20 @@ class MainWindow(QMainWindow):
         tb.addWidget(spacer)
         tb.addWidget(self.leds)
 
+    def fit_to_content(self, margin=30, max_size=None):
+        """Size the window to the controls so no scrollbars appear, capped to ``max_size`` (default: the screen).
+
+        The content's own size hint already reflects the fonts and scaling on this machine."""
+        hint = self.centralWidget().widget().sizeHint()
+        chrome = self.statusBar().sizeHint().height() + sum(
+            bar.sizeHint().height() for bar in self.findChildren(QToolBar))
+        width, height = hint.width() + margin, hint.height() + chrome + margin
+        if max_size is None:
+            screen = self.screen()
+            max_size = (screen.availableGeometry().width(), screen.availableGeometry().height()) if screen else (
+                width, height)
+        self.resize(min(width, max_size[0]), min(height, max_size[1]))
+
     # ---- patch actions -----------------------------------------------------------------------------
 
     def _reload_patch_list(self, select):
