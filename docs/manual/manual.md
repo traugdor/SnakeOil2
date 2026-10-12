@@ -24,6 +24,8 @@ through chorus, delay and reverb, then master volume, an optional auto limiter a
 - **Saw** and **Square** are two toggles. Switch on one, both (the square is added to the saw at half level, with its high part at the top of the saw so the two add) or neither (OSC1 is then
   silent, which is useful when you only want OSC2).
 - **PWM** sets the pulse width of the square between 25% and 75% (0.5 is a plain square).
+- **Sq Lvl** sets how much of the square is added when both Saw and Square are on (0-1, default 0.5, as in
+  V1). At 0 you hear the plain saw. It has no effect when only one wave is on.
 - **Level** sets how loud OSC1 is in the mix. OSC1 always acts as the modulator for OSC2, whatever its level.
 - **Oct -1** plays OSC1 one octave down (on by default).
 
@@ -83,7 +85,7 @@ The matrix has eight rows: **Source | Scale | Destination**.
 
 - **Sources:** Note Number (middle C is 0), LFO 1, LFO 2, Mod Wheel, Aftertouch.
 - **Scale** runs from -100% to +100%.
-- **Destinations** exist once per bank (prefixed `A:` or `B:`): OSC1 Level and PWM, OSC2 Level, Tune, Fine and
+- **Destinations** exist once per bank (prefixed `A:` or `B:`): OSC1 Level, PWM and Sq Level, OSC2 Level, Tune, Fine and
   PWM, Noise Level, Bank Volume, Cutoff, Resonance, Env Amount, Key Trk, Vel>Cut, the filter and amp envelope
   times, and **Pitch**. Global destinations: Mix, Detune, Width, Tempo, LFO 1 Rate, LFO 2 Rate, Chorus Depth,
   Delay Time, Feedback and Tone, Reverb Amount, Size and Damping.

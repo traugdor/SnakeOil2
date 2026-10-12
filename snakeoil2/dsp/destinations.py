@@ -16,7 +16,7 @@ class Destination:
 
 
 BANK_DEST_KEYS = (
-    ("OSC1 Level", "osc1_level"), ("OSC1 PWM", "osc1_pwm"),
+    ("OSC1 Level", "osc1_level"), ("OSC1 PWM", "osc1_pwm"), ("OSC1 Sq Level", "osc1_square_level"),
     ("OSC2 Level", "osc2_level"), ("OSC2 Tune", "osc2_coarse"),
     ("OSC2 Fine", "osc2_fine"), ("OSC2 PWM", "osc2_pwm"),
     ("Noise Level", "noise_level"), ("Bank Volume", "volume"),

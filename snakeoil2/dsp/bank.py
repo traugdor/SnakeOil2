@@ -2,7 +2,7 @@
 import numpy as np
 
 from . import noise
-from .constants import (AMP_SCALE, SQUARE_LAYER_LEVEL, FLT_ENV_OCTAVES, FLT_VEL_OCTAVES, FM_INDEX_MAX, FORCED_RELEASE_S,
+from .constants import (AMP_SCALE, FLT_ENV_OCTAVES, FLT_VEL_OCTAVES, FM_INDEX_MAX, FORCED_RELEASE_S,
                         NOISE_TABLE_LEN)
 from .envelopes import IDLE, Envelope
 from .filters import LPF_MAX_HZ, LPF_MIN_HZ, LowPass, lpf_coefficients
@@ -71,12 +71,12 @@ class Bank:
     def _osc1_signal(self, t, dt, p):
         """Return ``(audible, modulator)``, both the same signal, as in V1.
 
-        With both toggles on this is V1's Juno-style layer: the saw plus ``SQUARE_LAYER_LEVEL`` times a
+        With both toggles on this is V1's Juno-style layer: the saw plus Sq Level (``osc1_square_level``) times a
         pulse that is high at the top of the saw's rising ramp, so the two add instead of cancelling."""
         saw_on, sq_on = p["osc1_saw"], p["osc1_square"]
         if saw_on and sq_on:
             duty = duty_from_pwm(p["osc1_pwm"])
-            layer = saw(t, dt) + SQUARE_LAYER_LEVEL * pulse(np.mod(t + duty, 1.0), dt, duty)
+            layer = saw(t, dt) + p["osc1_square_level"] * pulse(np.mod(t + duty, 1.0), dt, duty)
             return layer, layer
         if saw_on:
             w = saw(t, dt)

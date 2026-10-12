@@ -80,7 +80,8 @@ class MainWindow(QMainWindow):
 
     def _build_body(self):
         osc = self._table("Oscillators", (
-            ("OSC1", (("osc1_saw", "osc1_square", "osc1_octave_down"), ("osc1_pwm",), ("osc1_level",))),
+            ("OSC1", (("osc1_saw", "osc1_square", "osc1_octave_down"), ("osc1_pwm",), ("osc1_square_level",),
+                      ("osc1_level",))),
             ("Mod", (("mod_mode",),)),
             ("OSC2", (("osc2_wave", "osc2_octave_up"), ("osc2_pwm",), ("osc2_level",), ("osc2_coarse",),
                       ("osc2_fine",))),

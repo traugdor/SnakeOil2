@@ -6,7 +6,7 @@ TAIL_SLOTS = 2 * PLAYABLE_VOICES
 POOL_SIZE = PLAYABLE_VOICES + TAIL_SLOTS
 FORCED_RELEASE_S = 0.010
 
-SQUARE_LAYER_LEVEL = 0.5      # V1's default Sq Level: the layered square is added at half level
+SQUARE_LAYER_LEVEL = 0.5      # default Sq Level (as V1): the layered square is added at half level
 DUTY_MIN = 0.25
 DUTY_MAX = 0.75
 

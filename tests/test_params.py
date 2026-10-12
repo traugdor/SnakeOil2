@@ -31,6 +31,7 @@ def test_spec_defaults():
     d = PARAMS.defaults()
     assert d["a_mod_mode"] == "OFF" and d["b_mod_mode"] == "OFF"
     assert d["a_osc1_pwm"] == 0.5 and d["b_osc2_pwm"] == 0.5
+    assert d["a_osc1_square_level"] == 0.5 and d["b_osc1_square_level"] == 0.5     # V1 default Sq Level
     assert d["mix"] == 0.5 and d["detune"] == 0.0 and d["width"] == 0.0
     assert d["a_cutoff"] == 2000.0
     assert d["a_amp_attack"] == pytest.approx(0.006)
@@ -72,6 +73,7 @@ def test_every_destination_points_at_a_real_param():
     assert DEST_NAMES[0] == "none"
     assert "A: Pitch" in DEST_BY_NAME and "B: Cutoff" in DEST_BY_NAME
     assert "Mix" in DEST_BY_NAME and "LFO 1 Rate" in DEST_BY_NAME
+    assert "A: OSC1 Sq Level" in DEST_BY_NAME and "B: OSC1 Sq Level" in DEST_BY_NAME
 
 
 def test_mod_rows_exist():

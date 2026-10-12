@@ -43,6 +43,7 @@ def _bank(prefix, name):
         _toggle(p + "osc1_saw", "Saw", g("OSC1"), True),
         _toggle(p + "osc1_square", "Square", g("OSC1"), False),
         _cont(p + "osc1_pwm", "PWM", g("OSC1"), 0.5, 0.0, 1.0),
+        _cont(p + "osc1_square_level", "Sq Lvl", g("OSC1"), C.SQUARE_LAYER_LEVEL, 0.0, 1.0),
         _cont(p + "osc1_level", "Level", g("OSC1"), 0.7, 0.0, 1.0),
         _toggle(p + "osc1_octave_down", "Oct -1", g("OSC1"), True),
         _choice(p + "osc2_wave", "Wave", g("OSC2"), C.OSC2_WAVES, "square"),

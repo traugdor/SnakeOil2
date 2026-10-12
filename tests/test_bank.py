@@ -109,6 +109,24 @@ def test_layer_is_the_v1_juno_layer_saw_plus_half_a_top_aligned_pulse():
     assert np.allclose(gain, gain[0], rtol=1e-3, atol=1e-3)       # same shape, constant amplitude
 
 
+def test_sq_level_scales_the_layered_square():
+    base = dict(osc1_saw=True, osc1_square=True, osc2_level=0.0, osc1_level=1.0, cutoff=20000.0)
+    saw_only = run(view(osc1_saw=True, osc1_square=False, osc2_level=0.0, osc1_level=1.0, cutoff=20000.0))[1]
+    zero = run(view(osc1_square_level=0.0, **base))[1]
+    half = rms(run(view(osc1_square_level=0.5, **base))[1])
+    full = rms(run(view(osc1_square_level=1.0, **base))[1])
+    assert np.array_equal(zero, saw_only)               # Sq Level 0 is exactly the plain saw
+    assert rms(zero) < half < full
+
+
+def test_sq_level_does_not_affect_a_lone_wave():
+    base = dict(osc2_level=0.0, osc1_level=1.0, cutoff=20000.0)
+    for toggles in (dict(osc1_saw=True, osc1_square=False), dict(osc1_saw=False, osc1_square=True)):
+        a = run(view(osc1_square_level=0.0, **toggles, **base))[1]
+        b = run(view(osc1_square_level=1.0, **toggles, **base))[1]
+        assert np.array_equal(a, b)
+
+
 def test_layer_is_louder_than_the_saw_alone_but_not_doubled():
     base = dict(osc2_level=0.0, osc1_level=1.0, cutoff=20000.0)
     both = rms(run(view(osc1_saw=True, osc1_square=True, **base))[1])
